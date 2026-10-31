@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: eurekaserver
+
+server:
+  port: 8761
+
+
+eureka:
+  client:
+    register-with-eureka: false #Bu property ilgili app'in eureka server'a register olmasini engelliyor. Server'in kendine register olmasina gerek olmadigi icin eklendi.
+    fetch-registry: false #Bu property ilgili app'in eureka server'dan registry bilgilerini cekmesini engelliyor.

@@ -1,0 +1,83 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/order_db
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    database: POSTGRESQL
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  cloud:
+    stream:
+      bindings:
+        createOrder-out-0:
+          destination: order.exchange
+          content-type: application/json
+      kafka:
+        binder:
+          brokers: localhost:9092
+
+server:
+  port: 8083
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - bus-refresh
+          - shutdown
+          - health
+          - info
+          - metrics
+          - circuitbreakers
+          - circuitbreakerevents
+  endpoint:
+    shutdown:
+      enabled: true
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+  register-with-eureka: true
+  fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+
+logging:
+  level:
+    root: INFO
+    com.ecommerce.user: TRACE
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      productServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        slidingWindowType: COUNT_BASED
+  retry:
+    instances:
+      productServiceRetry:
+        maxAttempts: 5
+        waitDuration: 300ms

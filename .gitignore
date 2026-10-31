@@ -1,0 +1,16 @@
+target/
+*.class
+*.war
+*.ear
+*.jar
+*.nar
+*.car
+*.zip
+*.tar.gz
+*.rar
+
+.mvn
+.idea/
+logs/
+*.log
+.env

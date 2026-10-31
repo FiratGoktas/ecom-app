@@ -1,0 +1,50 @@
+spring:
+  mongodb:
+    uri: mongodb://localhost:27017/user_table
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - bus-refresh
+          - shutdown
+  endpoint:
+    shutdown:
+      enabled: true
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+  register-with-eureka: true
+  fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+
+logging:
+  level:
+    root: INFO
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+
+keycloak:
+  admin:
+    username: user
+    password: user
+    server-url: http://localhost:8443
+    realm: ecom-app
+    client-id: admin-cli

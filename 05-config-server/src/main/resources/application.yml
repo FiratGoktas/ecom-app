@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: configserver
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: file:///C:\Users\Ozge\Desktop\dev-spring-boot\02-udemy-ecommerce-course-workspace\02-ecommerce-with-microservices\05-config-server\src\main\resources\config
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+server:
+  port: 8888
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - bus-refresh
