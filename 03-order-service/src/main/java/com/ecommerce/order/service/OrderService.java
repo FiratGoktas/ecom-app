@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -66,10 +68,13 @@ public class OrderService {
         //Clear the Cart
         cartItemService.clearCart(userId);
 
-        //creating a DTO and send it with rabbitmq queue message for Notification Service
+        //creating a DTO and send it to the Kafka topic for Notification Service
         OrderCreatedEventDTO eventMessage = new OrderCreatedEventDTO(
                 savedOrder.getId(),
                 savedOrder.getUserId(),
+                userResponse.getEmail(),
+                userResponse.getFirstName(),
+                userResponse.getLastName(),
                 savedOrder.getStatus(),
                 savedOrder.getItems()
                         .stream()
@@ -80,7 +85,13 @@ public class OrderService {
                 savedOrder.getUpdatedAt()
         );
 
-        streamBridge.send("createOrder-out-0", eventMessage);
+        // Publish only after the transaction commits, so no email goes out for a rolled-back order
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                streamBridge.send("createOrder-out-0", eventMessage);
+            }
+        });
 
         //Return Optional<OrderResponse>
         return Optional.of(mapToOrderResponse(savedOrder));

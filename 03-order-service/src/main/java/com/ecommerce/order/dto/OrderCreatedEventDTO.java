@@ -16,6 +16,9 @@ public class OrderCreatedEventDTO {
 
     private Long orderId;
     private String userId;
+    private String userEmail;
+    private String userFirstName;
+    private String userLastName;
     private OrderStatus orderStatus;
     List<OrderItemDTO> items;
     private BigDecimal totalAmount;

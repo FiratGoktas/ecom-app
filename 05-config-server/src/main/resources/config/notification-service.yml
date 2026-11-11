@@ -1,17 +1,65 @@
 spring:
+  mail:
+    host: localhost
+    port: 1025
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+      # JavaMail waits forever by default; a hung SMTP server would stall the Kafka consumer
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
   cloud:
     function:
-      definition: orderCreated
+      definition: orderCreated;orderCreatedDlq
     stream:
       function:
-        definition: orderCreated
+        definition: orderCreated;orderCreatedDlq
       bindings:
         orderCreated-in-0:
           destination: order.exchange
           content-type: application/json
+          # Named group: offsets are committed, so events published while we're down aren't lost,
+          # and multiple instances share the work instead of each sending every email
+          group: notification-service
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 2000
+        # Slow retry of failed emails: 5s, 10s, 20s ... capped at 5 min, 20 attempts (about 70 min in total)
+        orderCreatedDlq-in-0:
+          destination: order.exchange.notification-dlq
+          content-type: application/json
+          group: notification-service-dlq
+          consumer:
+            max-attempts: 20
+            back-off-initial-interval: 5000
+            back-off-multiplier: 2.0
+            back-off-max-interval: 300000
       kafka:
         binder:
           brokers: localhost:9092
+        bindings:
+          orderCreated-in-0:
+            consumer:
+              # A new named group would otherwise start from 'earliest' and email every past order
+              start-offset: latest
+              enable-dlq: true
+              dlq-name: order.exchange.notification-dlq
+          orderCreatedDlq-in-0:
+            consumer:
+              # New group starts from 'earliest' so failures sent before this consumer existed are retried too
+              start-offset: earliest
+              # Still failing after ~70 min: park it instead of dropping it (inspect / replay by hand)
+              enable-dlq: true
+              dlq-name: order.exchange.notification-parking
+              configuration:
+                # Retries block the poll loop for up to ~70 min; keep Kafka from evicting the consumer meanwhile
+                max.poll.records: 1
+                max.poll.interval.ms: 5400000
+
+notification:
+  mail:
+    from: no-reply@ecommerce.local
 
 server:
   port: 8084
